@@ -41,5 +41,9 @@ c) 'outDir' -> uncomment if so and add  "outDir": "./dist" (emitted files, after
 9- Install the expressJS typtes These are dev dependencies, no need to publish, install using -D command
 >npm i -D @types/express
 
+10- Database
+>npm install sqlite3<br>
+>npm install --save-dev @types/sqlite3
+
 To run o to the terninal and run the file that is in the package json test scripts
 > npm run index
