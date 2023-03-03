@@ -46,4 +46,4 @@ c) 'outDir' -> uncomment if so and add  "outDir": "./dist" (emitted files, after
 >npm install --save-dev @types/sqlite3
 
 To run o to the terninal and run the file that is in the package json test scripts
-> npm run index
+> npm run dev ( trigger index.ts file)
