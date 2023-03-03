@@ -1,4 +1,4 @@
-# Project_TypeScript
+# Project TypeScript
 
 TypeScript is a strongly typed, object-oriented, compiled programming language that builds on JavaScript. 
 It is a superset of the JavaScript language, designed to give you better tooling at any scale.
