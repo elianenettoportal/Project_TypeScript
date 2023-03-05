@@ -50,117 +50,52 @@ To run o to the terninal and run the file that is in the package json test scrip
 
 # Docker Image
 
-1 - Create a Dockerfile to wrapp the application into a container. It will be used for Production & Development Environment and use them in Docker Compose(Look a and b items)
-It follow multi-stage docker build. First, it compiles the image with a temporary docker image and copies that build to the final image.
-After that, it installs a process manager called pm2, mostly used in all production applications.
+### Create a Dockerfile to wrapp the application into a container
 
-## a) Docker Image for Development Environment - Dockerfile.dev
-'''
-	FROM node:18
-	WORKDIR /usr
-	COPY package.json ./
+	FROM node:18-slim as base
+	WORKDIR /Project_TypeScript
+	COPY package*.json ./
 	COPY tsconfig.json ./
-	COPY src ./src
-	RUN ls -a
+	COPY src /app/src
 	RUN npm install
-	EXPOSE 3005
-	CMD ["npm","run","dev"]
-'''
+	COPY ./src .
 
-b) Docker image for Production Environment Dockerfile
-'''
-	FROM node:18-alpine
-	WORKDIR /usr
-	COPY package.json ./
-	COPY tsconfig.json ./
-	COPY src ./src
-	RUN ls -a
-	RUN npm install
+	FROM base as production
+	ENV NODE_PATH=./build
 	RUN npm run build
+
+
+### Docker-compose for production - docker-compose.yml
 	
-	## this is stage two , where the app actually runs
-	FROM node:18-alpine
-	WORKDIR /usr
-	COPY package.json ./
-	RUN npm install --only=production
-	COPY --from=0 /usr/dist .
-	RUN npm install pm2 -g
-	EXPOSE 80
-	CMD ["pm2-runtime","app.js"]
-
-'''
-
-2 - Create a Docker Compose to create a service and network for the application to communicate - file name -> docker-compose.yml 
-'''
 	version: "3.7"
 	services:
-	  mongo:
-	    container_name: mongo
-	    image: mongo
-	  app:
-	    container_name: app
-	    external_links:
-	      - mongo
-	    depends_on:
-	      - mongo
-'''
-
-Docker compose for dev - docker-compose.override.yml
-'''
-	version: "3.7"
-	services:
-	  mongo:
-	    container_name: mongo
-	    image: mongo
-	    restart: always
+	  sqlite3:
+	    image: nouchka/sqlite3:latest
+	    stdin_open: true
+	    tty: true
 	    volumes:
-	      - ./data:/data/db
-	    ports:
-	      - 27017:27017
-	  app:
-	    container_name: app
-	    restart: always
+	       - ./src/:/Project_TypeScript
+
+	  ts-api:
 	    build:
 	      context: .
-	      dockerfile: Dockerfile.dev
-	    env_file: .env.local
-	    environment:
-	      - PORT=${PORT}
-	      - MONGO_URL=${MONGO_URL}
+	      dockerfile: Dockerfile
+	      target: base
+	    volumes:
+	      - ./src:/Project_TypeScript/src
+	      - ./nodemon.json:/Project_TypeScript/nodemon.json
+	    container_name: ts-node-docker
+	    expose:
+	      - '3333'
 	    ports:
-	      - 4005:4005
-	    external_links:
-	      - mongo
-	    depends_on:
-	      - mongo
-	volumes:
-	  mongo-data:
-	    driver: local
-'''
+	      - '3333:3333'
+	    env_file:
+	      - .env
+	    command: npm run dev
 
-Docker-compose for production - docker-compose.prod.yml
-'''
-	version: "3.7"
-	services:
-	  mongo:
-	    container_name: mongo
-	    image: mongo
-	    restart: always
-	    ports:
-	      - 27017:27017
-	  app:
-	    container_name: app
-	    restart: always
-	    build: .
-	    env_file: .env
-	    environment:
-	      - PORT=${PORT}
-	      - MONGO_URL=${MONGO_URL}
-	    ports:
-	      - 4000:80
-	    external_links:
-	      - mongo
-	    depends_on:
-	      - mongo
 
-'''
+### Build Docker image<br>
+	docker-compose build
+
+### Run contaier<br>
+	docker-compose up -d
