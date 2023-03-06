@@ -30,7 +30,7 @@ article.get('/articles', async (request, response) => {
         success= false;
         data= 'An Error Happened';
     }
-    response.json({success: success,message: data});
+    response.json({success: success,articles: data});
 });
 
   
