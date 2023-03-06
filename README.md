@@ -49,24 +49,62 @@ To run o to the terninal and run the file that is in the package json test scrip
 > npm run dev ( trigger index.ts file)
 
 # Docker Image
+Inside the backend project, create this dockerfile to generate the image 
+```
+	Project_TypeScript/
+	|
+	├── src/
+	├── backend.dockerfile
+	├── package.jon
+	├── package-lock.json
+	└── tsconfig.json
+```
+### Create a Dockerfile to wrapp the application into a container(backend.dockerfile)
 
-### Create a Dockerfile to wrapp the application into a container
-
+	# from base image node
 	FROM node:18-slim as base
-	WORKDIR /Project_TypeScript
-	COPY package*.json ./
-	COPY tsconfig.json ./
-	COPY src /app/src
-	RUN npm install
-	COPY ./src .
-
-	FROM base as production
-	ENV NODE_PATH=./build
-	RUN npm run build
-
-
-### Docker-compose for production - docker-compose.yml
 	
+	# Create an application directory
+	RUN mkdir -p /app
+
+	WORKDIR /app
+
+	# copying all the files from your file system to container file system
+	COPY Project_TypeScript/package*.json ./
+	COPY Project_TypeScript/tsconfig.json ./
+
+	# install all dependencies
+	RUN npm install
+
+	# Copy or project directory (locally) in the current directory of our docker image (/app)
+	COPY Project_TypeScript/ .
+
+	# Expose $PORT on container.
+	# We use a varibale here as the port is something that can differ on the environment.
+	EXPOSE 3333
+
+	# Start the app
+	CMD [ "npm", "start" ]
+
+Create a root package and add this docker-compose.yml and Frontend project and Backend project.
+```
+	root
+	|
+	├──── docker-compose.yml
+	├──── Project_TypeScript/
+	|	├── src/
+	|	├── backend.dockerfile
+	|	├── package.jon
+	|	├── package-lock.json
+	|	└── tsconfig.json
+	├──── project_react_typescript/
+	|	├── src/
+	|	├── frontend.dockerfile
+	|	├── package.jon
+	|	├── package-lock.json
+	|	└── tsconfig.json
+```
+### Docker-compose (docker-compose.yml)
 	version: "3.7"
 	services:
 	  sqlite3:
@@ -75,27 +113,25 @@ To run o to the terninal and run the file that is in the package json test scrip
 	    tty: true
 	    volumes:
 	       - ./src/:/Project_TypeScript
-
 	  ts-api:
-	    build:
-	      context: .
-	      dockerfile: Dockerfile
-	      target: base
-	    volumes:
-	      - ./src:/Project_TypeScript/src
-	      - ./nodemon.json:/Project_TypeScript/nodemon.json
-	    container_name: ts-node-docker
-	    expose:
-	      - '3333'
+	    image: web-backend:latest
 	    ports:
-	      - '3333:3333'
-	    env_file:
-	      - .env
-	    command: npm run dev
+	      - 3333:3333
+	    command: npm run start
+	  web-frontend:
+	    image: web-frontend:latest
+	    environment:
+	      PORT: 3005
+	      PROXY_API: http://web-backend:3333/
+	    ports:
+	      - 3005:3005
 
 
-### Build Docker image<br>
-	docker-compose build
+### Build Docker File for Backend (In the root folder execute below command) <br>
+	docker build --file=Project_TypeScript/backend.dockerfile  -t web-backend .
+	
+### Build Docker File for Frontend (In the root folder execute below command) <br>
+	docker build --file=project_react_typescript/frontend.dockerfile  -t web-frontend .
 
-### Run contaier<br>
-	docker-compose up -d
+### Run docker-compose to create the container (In the root folder run below command) <br>
+	docker-compose -f docker-compose.yml up
